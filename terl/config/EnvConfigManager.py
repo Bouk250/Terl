@@ -1,5 +1,6 @@
 import yaml
 from yaml.parser import ParserError
+from datetime import datetime
 
 
 class EnvConfigManager:
@@ -13,10 +14,14 @@ class EnvConfigManager:
     """
 
     __default_empty_config = {
-        "symbols" : ["GBPUSD"],
+        "symbols" : ['GBPUSD'],
         "timeframes" : [15],
-        "data_path": "/",
-        "data_loader": "veax"
+        "data_path": '/',
+        "data_loader": 'vaex',
+        "num_of_history" : 60,
+        "obs_var" : ['GBPUSD_15_close'],
+        "start_dt" : datetime(2000,1,1,00,00),
+        "end_dt": -1,
     }
     
     def __init__(self, config_path:str = "config.yaml", new_config_file:bool = False):
@@ -75,6 +80,4 @@ def config_checker(config:dict):
             raise ValueError()
         param = config.get(key)
         if param is None:
-            raise ValueError()
-        if len(param) == 0:
             raise ValueError()
