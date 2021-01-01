@@ -1,0 +1,9 @@
+Test 1:
+  data_loader: vx
+  data_path: ../data
+  symbols:
+  - GBPUSD
+  timeframes:
+  - 15
+  - 60
+  - 240
