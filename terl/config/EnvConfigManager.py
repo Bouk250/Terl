@@ -1,7 +1,7 @@
 import yaml
 from yaml.parser import ParserError
 from datetime import datetime
-
+from ta.momentum import rsi
 
 class EnvConfigManager:
 
@@ -19,9 +19,22 @@ class EnvConfigManager:
         "data_path": '/',
         "data_loader": 'vaex',
         "num_of_history" : 60,
-        "obs_var" : ['GBPUSD_15_close'],
+        "trading_price_obs":['GBPUSD_15_close'],
         "start_dt" : datetime(2000,1,1,00,00),
         "end_dt": -1,
+        "obs_var" : ['GBPUSD_15_close'],
+        "indicators": {
+            'rsi': {
+                'indicator_func': rsi,
+                'series': {
+                    'close': 'close'
+                },
+                'params': {
+                    'window': 12
+                }
+            }
+        },
+        "obs_pipeline":None,
     }
     
     def __init__(self, config_path:str = "config.yaml", new_config_file:bool = False):
@@ -72,12 +85,15 @@ def get_new_config() -> dict:
     return EnvConfigManager.get_new_config()
 
 def config_checker(config:dict):
-    if config is None:
-        raise ValueError()
-    empty_config_keys = get_new_config().keys()
-    for key in empty_config_keys:
-        if not key in config.keys():
-            raise ValueError()
-        param = config.get(key)
-        if param is None:
-            raise ValueError()
+    return None
+    symboles = config.get('symbols')
+    timesframes = config.get('timeframes')
+    data_path = config.get('data_path')
+    data_loader = config.get('data_loader')
+    obs_var = config.get('obs_var')
+    obs_var = config.get('obs_var')
+    num_of_history = config.get('num_of_history')
+    df_type_vx = config.get('data_loader') in ['vx', 'vaex']
+    pipeline = config.get('obs_pipeline')
+    start_dt = config.get('start_dt')
+    end_dt = config.get('end_dt')
