@@ -43,7 +43,7 @@ class EnvConfigManager:
         self._env_config.pop(config_name, None)
 
     def get_config(self, config_name:str) -> dict:
-        return self._env_config.get(config_name)
+        return self._env_config.get(config_name).copy()
 
     @staticmethod
     def __wirte_config(config_path:str, env_config:dict):

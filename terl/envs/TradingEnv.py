@@ -9,7 +9,7 @@ import gym
 from gym.spaces import MultiDiscrete
 import terl
 from terl.config import EnvConfigManager, config_checker
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
 import numba
 from numba import prange
 from terl.common.utils import random_index
@@ -73,14 +73,14 @@ class TradingEnv(gym.Env):
                 if data_loader in ['pd','pandas']:
                     file_path = os.path.join(data_path,s,f"{df_id}.h5")
                     df = pd.read_hdf(file_path)
-                    index = pd.DataFrame(index=df['time'].to_numpy(), data=np.arange(0,df.shape[0]), columns=[df_id])
+                    index = pd.DataFrame(index=df['time'].to_numpy(), data=np.arange(0,df.shape[0], dtype=np.int32), columns=[df_id])
                     df = df.drop('time', axis=1)
                     df = df.add_prefix(f"{df_id}_")
 
                 elif data_loader in ['vx', 'vaex']:
                     file_path = os.path.join(data_path,s,f"{df_id}.hdf5")
                     df = vx.open(file_path)
-                    index = pd.DataFrame(index=df['time'].to_numpy(), data=np.arange(0,df.shape[0]), columns=[df_id])
+                    index = pd.DataFrame(index=df['time'].to_numpy(), data=np.arange(0,df.shape[0], dtype=np.int32), columns=[df_id])
                     df = df.drop('time')
 
                     for col in list(df.columns):
@@ -89,39 +89,72 @@ class TradingEnv(gym.Env):
 
                 intersection = list(set(df.columns) & set(obs_var)) 
                 obs_df = df[intersection]
-                if obs_df.shape[0]>0:
+                if obs_df.shape[1]>0:
                     index_list.append(index)
                     self._db.update([(df_id,obs_df)])
 
-        self._dt_index_map = pd.concat(index_list, axis=1).fillna(method='ffill')
+        self._dt_index_map = pd.concat(index_list, axis=1).fillna(method='ffill').dropna().astype('int32')
     
     def step(self, action):
+        self._current_dt_index += 1
         obs_var = self._config.get('obs_var')
+        num_of_history = self._config.get('num_of_history')
+        df_type_vx = self._config.get('data_loader') in ['vx', 'vaex']
+        pipeline = self._config.get('obs_pipeline')
+        db = self._db
+        db_keys = db.keys()
+        db_len = len(db_keys)
+        indexs = self._dt_index_map.iloc[self._current_dt_index]
 
-    @numba.jit
+
+        obs_blocks = [None] * db_len
+
+        for i, df_key in enumerate(db_keys):
+            start_index = indexs[df_key] - num_of_history
+            end_index = indexs[df_key]
+            df = db.get(df_key)
+            self.__select_from_df(df,start_index,end_index,df_type_vx,obs_blocks,i)
+
+        obs = pd.concat(obs_blocks, axis=1)[obs_var].to_numpy()
+        if not pipeline is None:
+            obs = pipeline.fit_transform(obs)
+            
+        return obs
+
+
     def reset(self):
         self._current_dt_index = random_index(self._min_index, self._max_index)
 
         obs_var = self._config.get('obs_var')
         num_of_history = self._config.get('num_of_history')
         df_type_vx = self._config.get('data_loader') in ['vx', 'vaex']
+        pipeline = self._config.get('obs_pipeline')
         db = self._db
+        db_keys = db.keys()
+        db_len = len(db_keys)
         indexs = self._dt_index_map.iloc[self._current_dt_index]
 
-        obs_blocks = []
-        obs_blocks_append = obs_blocks.append
 
-        for df_key in db:
+        obs_blocks = [None] * db_len
+
+        for i, df_key in enumerate(db_keys):
             start_index = indexs[df_key] - num_of_history
             end_index = indexs[df_key]
             df = db.get(df_key)
-            if df_type_vx:
-                obs_blocks_append(df[start_index:end_index].to_pandas_df())
-            else:
-                obs_blocks_append(df.iloc[start_index:end_index].reset_index())
+            self.__select_from_df(df,start_index,end_index,df_type_vx,obs_blocks,i)
 
-        
-        return pd.concat(obs_blocks)[obs_var]
+        obs = pd.concat(obs_blocks, axis=1)[obs_var].to_numpy()
+        if not pipeline is None:
+            obs = pipeline.fit_transform(obs)
+            
+        return obs
+
+    @staticmethod
+    def __select_from_df(df, start_index, end_index, is_vaex_df, result, index):
+        if is_vaex_df:
+            result[index] = df[start_index:end_index].to_pandas_df()
+        else:
+            result[index] = df.iloc[start_index:end_index].reset_index()
 
 
 def make_env(config_name:str, config_path:str = None) -> TradingEnv:
