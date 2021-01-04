@@ -1,1 +1,1 @@
-from terl.envs.TradingEnv import TradingEnv, make_env
+from .TradingEnv import TradingEnv, make_env

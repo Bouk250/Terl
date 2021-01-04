@@ -19,10 +19,9 @@ class EnvConfigManager:
         "data_path": '/',
         "data_loader": 'vaex',
         "num_of_history" : 60,
-        "trading_price_obs":['GBPUSD_15_close'],
+        "obs_var" : ['GBPUSD_15_close'],
         "start_dt" : datetime(2000,1,1,00,00),
         "end_dt": -1,
-        "obs_var" : ['GBPUSD_15_close'],
         "indicators": {
             'rsi': {
                 'indicator_func': rsi,
@@ -33,6 +32,11 @@ class EnvConfigManager:
                     'window': 12
                 }
             }
+        },
+        "portfolio":{
+            "trading_price_obs": ['GBPUSD_15_close'],
+            "pip_resolution": 0.00001,
+            
         },
         "obs_pipeline":None,
     }
