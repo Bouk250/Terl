@@ -21,8 +21,7 @@ class TradingEnv(gym.Env):
         config_checker(config)
         self._config = config
         self._db = dict()
-        self._dt_index_map = None
-        self.__load_db()
+        self._current_prices = None
         self._current_dt_index = 0
         self._symboles = self._config.get('symbols')
         self._timesframes = self._config.get('timeframes')
@@ -34,9 +33,11 @@ class TradingEnv(gym.Env):
         self._num_of_history = self._config.get('num_of_history')
         start_dt = self._config.get('start_dt')
         end_dt = self._config.get('end_dt')
-        self._pipeline = self._config.get('pipeline')
+        self._pipeline = self._config.get('obs_pipeline')
         self._portfolio = Portfolio(self._config.get('portfolio'))
         self._trading_price_obs = self._portfolio._trading_price_obs
+
+        self.__load_db()
 
         if type(start_dt) is int:
             self._min_index = start_dt
@@ -97,6 +98,21 @@ class TradingEnv(gym.Env):
                     'i' : i
                     })
                 thread_list[i].start()
+
+                """
+                load_one_file(**{
+                    's':s, 
+                    't':t, 
+                    'data_loader':data_loader, 
+                    'data_path':data_path, 
+                    'obs_var':obs_var, 
+                    'indicators':indicators, 
+                    'df_result':df_result, 
+                    'index_list':index_list, 
+                    'i' : i
+                    })
+
+                """
                 
                 i += 1
 
@@ -106,15 +122,21 @@ class TradingEnv(gym.Env):
 
         self._db.update(df_result)
         self._dt_index_map = pd.concat(index_list, axis=1).fillna(method='ffill').dropna().astype('int32')
+
+    def __repr__(self) -> str:
+        return str(self._config)
     
     def step(self, action):
-        self._current_dt_index += 1            
-        return self.__generate_obs()
+        self._current_dt_index += 1
+        self._portfolio.update(action, self._current_prices)
+        obs, self._current_prices = self.__generate_obs()
+        return obs
 
 
     def reset(self):
         self._current_dt_index = random_index(self._min_index, self._max_index)
-        return self.__generate_obs()
+        obs, self._current_prices = self.__generate_obs() 
+        return obs
 
 
     def __generate_obs(self):
@@ -136,11 +158,13 @@ class TradingEnv(gym.Env):
 
             select_from_df(df,start_index,end_index,df_type_vx,obs_blocks,i)
 
-        obs = pd.concat(obs_blocks, axis=1)[obs_var].to_numpy(dtype=np.float32)
+        obs = pd.concat(obs_blocks, axis=1)[obs_var]
+        prices = obs[self._trading_price_obs].iloc[-1]
+        obs = obs.to_numpy(dtype=np.float32)
         if not pipeline is None:
             obs = pipeline.fit_transform(obs)
             
-        return obs
+        return obs, prices
 
 def make_env(config_name:str, config_path:str = None) -> TradingEnv:
     if config_path is None:

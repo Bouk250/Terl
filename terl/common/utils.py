@@ -2,6 +2,7 @@ from threading import Thread
 import numba
 import os
 import numpy as np
+from numpy.core.arrayprint import TimedeltaFormat
 import pandas as pd
 from pandas.core import series
 import vaex as vx
@@ -22,6 +23,20 @@ def load_one_file(s:str,t:int,data_loader:str, data_path:str, obs_var:list, indi
         index = pd.DataFrame(index=df['time'].to_numpy(), data=np.arange(0,df.shape[0], dtype=np.int32), columns=[df_id])
         df = df.drop('time', axis=1)
         
+        if indicators is not None:
+            for key in indicators:
+                indicator = indicators.get(key, dict)
+                symbols = indicator.get('symbols')
+                timeframes = indicator.get('timeframes')
+                if s in symbols and t in timeframes:
+                    kwargs=dict()
+                    indicator_func = indicator.get('indicator_func')
+                    series = indicator.get('series')
+                    params = indicator.get('params')
+                    for series_key in series:
+                        kwargs.update([(series_key, df[series.get(series_key)])])
+                    kwargs.update(params)
+                    df[key] = indicator_func(**kwargs).to_numpy()
         
         df = df.add_prefix(f"{df_id}_")
 
@@ -33,15 +48,18 @@ def load_one_file(s:str,t:int,data_loader:str, data_path:str, obs_var:list, indi
 
         if indicators is not None:
             for key in indicators:
-                indicator = indicators.get(key)
-                kwargs=dict()
-                indicator_func = indicator.get('indicator_func')
-                series = indicator.get('series')
-                params = indicator.get('params')
-                for series_key in series:
-                    kwargs.update([(series_key, df[series.get(series_key)].to_pandas_series())])
-                kwargs.update(params)
-                df[key] = indicator_func(**kwargs).to_numpy()
+                indicator = indicators.get(key, dict)
+                symbols = indicator.get('symbols')
+                timeframes = indicator.get('timeframes')
+                if s in symbols and t in timeframes:
+                    kwargs=dict()
+                    indicator_func = indicator.get('indicator_func')
+                    series = indicator.get('series')
+                    params = indicator.get('params')
+                    for series_key in series:
+                        kwargs.update([(series_key, df[series.get(series_key)].to_pandas_series())])
+                    kwargs.update(params)
+                    df[key] = indicator_func(**kwargs).to_numpy()
 
         for col in list(df.columns):
             new_col = f"{df_id}_{col}"
@@ -49,7 +67,7 @@ def load_one_file(s:str,t:int,data_loader:str, data_path:str, obs_var:list, indi
 
     intersection = list(set(df.columns) & set(obs_var)) 
     obs_df = df[intersection]
-    if obs_df.shape[1]>0:
+    if obs_df.shape[0]>0:
         index_list[i] = index
         df_result[i] = (df_id,obs_df)
 

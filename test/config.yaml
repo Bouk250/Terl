@@ -1,52 +1,30 @@
 Env 1:
-  data_loader: vx
-  data_path: /home/ariel/Documents/ForexData
-  end_dt: -1
-  num_of_history: 200
-  trading_price_obs:
-  - GBPUSD_1_close
-  - EURUSD_1_close
-  - EURGBP_1_close
-  obs_var: &id001
-  - GBPUSD_1_close
-  - GBPUSD_5_close
-  - GBPUSD_15_close
-  - GBPUSD_60_close
-  - GBPUSD_240_close
-  - EURUSD_1_close
-  - EURUSD_5_close
-  - EURUSD_15_close
-  - EURUSD_60_close
-  - EURUSD_240_close
-  - EURGBP_1_close
-  - EURGBP_5_close
-  - EURGBP_15_close
-  - EURGBP_60_close
-  - EURGBP_240_close
-  start_dt: &id002 2000-01-01 00:00:00
-  symbols: &id003
-  - GBPUSD
-  - EURUSD
-  - EURGBP
-  timeframes: &id004
-  - 1
-  - 5
-  - 15
-  - 60
-  - 240
-Env 2:
-  data_loader: vx
-  data_path: /home/ariel/Documents/ForexData
+  data_loader: vaex
+  data_path: ../data
   end_dt: -1
   indicators:
     rsi:
       indicator_func: !!python/name:ta.momentum.rsi ''
+      symbols:
+      - GBPUSD
+      timeframes:
+      - 15
       params:
         window: 12
       series:
         close: close
-  num_of_history: 200
-  obs_var: *id001
-  start_dt: *id002
-  symbols: *id003
-  timeframes: *id004
+  num_of_history: 60
+  obs_pipeline: 
+  obs_var:
+  - GBPUSD_15_close
+  - GBPUSD_15_rsi
+  portfolio:
+    pip_resolution: 1.0e-05
+    trading_price_obs:
+    - GBPUSD_15_close
+    - GBPUSD_15_rsi
+  start_dt: 2000-01-01 00:00:00
+  symbols:
+  - GBPUSD
+  timeframes:
+  - 15

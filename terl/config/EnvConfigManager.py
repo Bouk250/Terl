@@ -24,6 +24,8 @@ class EnvConfigManager:
         "end_dt": -1,
         "indicators": {
             'rsi': {
+                'symbols':['GBPUSD'],
+                'timeframes':[15],
                 'indicator_func': rsi,
                 'series': {
                     'close': 'close'
