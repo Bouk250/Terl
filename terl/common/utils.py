@@ -2,11 +2,8 @@ from threading import Thread
 import numba
 import os
 import numpy as np
-from numpy.core.arrayprint import TimedeltaFormat
 import pandas as pd
-from pandas.core import series
 import vaex as vx
-import time
 
 @numba.njit(fastmath=True)
 def random_index(min_index:int, max_index:int) -> int:

@@ -11,6 +11,7 @@ setup(
        "gym",
        "vaex",
        "pandas",
-       "numpy"
+       "numpy",
+       "numba"
    ]
 )

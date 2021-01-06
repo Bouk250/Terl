@@ -1,12 +1,9 @@
 from datetime import datetime
-import vaex as vx
 import numpy as np
 import pandas as pd
-import numba as nb
 from typing import Union
 import gym
-from gym.spaces import Discrete, Box
-import terl
+from gym.spaces import Discrete, Box, Dict
 from terl.config import EnvConfigManager, config_checker
 from terl.common.utils import random_index, load_one_file, select_from_df
 from threading import Thread
@@ -60,7 +57,10 @@ class TradingEnv(gym.Env):
             raise ValueError()
 
         self.action_space = Discrete(self._portfolio._num_of_action)
-        self.observation_space = Box(low=-np.inf, high=np.inf, shape=self.reset().shape, dtype=np.float32)
+        self.observation_space = Dict({
+            'market_data':Box(low=-np.inf, high=np.inf, shape=self.reset()['market_data'].shape, dtype=np.float32),
+            'portfolio_state':Box(low=0,high=1,shape=self._portfolio.state.shape)
+        }) 
 
 
     def get_config(self) -> dict:
@@ -130,12 +130,23 @@ class TradingEnv(gym.Env):
         self._current_dt_index += 1
         self._portfolio.update(action, self._current_prices)
         obs, self._current_prices = self.__generate_obs()
+
+        obs = {
+            'market_data':obs,
+            'portfolio_state':self._portfolio.state
+        }
+
         return obs
 
 
     def reset(self):
         self._current_dt_index = random_index(self._min_index, self._max_index)
         obs, self._current_prices = self.__generate_obs() 
+        self._portfolio.reset()
+        obs = {
+            'market_data':obs,
+            'portfolio_state':self._portfolio.state
+        }
         return obs
 
 
@@ -160,6 +171,7 @@ class TradingEnv(gym.Env):
 
         obs = pd.concat(obs_blocks, axis=1)[obs_var]
         prices = obs[self._trading_price_obs].iloc[-1]
+        prices.name = indexs.name
         obs = obs.to_numpy(dtype=np.float32)
         if not pipeline is None:
             obs = pipeline.fit_transform(obs)
