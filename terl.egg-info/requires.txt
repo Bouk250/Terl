@@ -2,3 +2,4 @@ gym
 vaex
 pandas
 numpy
+numba
