@@ -30,7 +30,6 @@ class TradingEnv(gym.Env):
         self._num_of_history = self._config.get('num_of_history')
         start_dt = self._config.get('start_dt')
         end_dt = self._config.get('end_dt')
-        self._pipeline = self._config.get('obs_pipeline')
         self._portfolio = Portfolio(self._config.get('portfolio'))
         self._trading_price_obs = self._portfolio._trading_price_obs
 
@@ -127,6 +126,11 @@ class TradingEnv(gym.Env):
         return str(self._config)
     
     def step(self, action):
+        obs = None
+        reward = 0
+        done = False
+        info = {}
+
         self._current_dt_index += 1
         self._portfolio.update(action, self._current_prices)
         obs, self._current_prices = self.__generate_obs()
@@ -136,7 +140,7 @@ class TradingEnv(gym.Env):
             'portfolio_state':self._portfolio.state
         }
 
-        return obs
+        return obs, reward, done, info
 
 
     def reset(self):
@@ -154,7 +158,6 @@ class TradingEnv(gym.Env):
         obs_var = self._obs_var
         num_of_history = self._num_of_history
         df_type_vx = self._data_loader in ['vx', 'vaex']
-        pipeline = self._pipeline
         db = self._db
         db_keys = db.keys()
         db_len = len(db_keys)
@@ -173,8 +176,6 @@ class TradingEnv(gym.Env):
         prices = obs[self._trading_price_obs].iloc[-1]
         prices.name = indexs.name
         obs = obs.to_numpy(dtype=np.float32)
-        if not pipeline is None:
-            obs = pipeline.fit_transform(obs)
             
         return obs, prices
 

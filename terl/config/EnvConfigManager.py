@@ -39,8 +39,7 @@ class EnvConfigManager:
             "trading_price_obs": ['GBPUSD_15_close'],
             "pip_resolution": 0.00001,
             
-        },
-        "obs_pipeline":None,
+        }
     }
     
     def __init__(self, config_path:str = "config.yaml", new_config_file:bool = False):
@@ -73,7 +72,7 @@ class EnvConfigManager:
     def __read_config(config_path:str) -> dict:
         try:
             with open(config_path, 'r') as stream:
-                return yaml.load(stream=stream)
+                return yaml.load(stream=stream,Loader=yaml.FullLoader)
         except FileNotFoundError:
             raise FileNotFoundError("Config file not exist")
         except ParserError:
