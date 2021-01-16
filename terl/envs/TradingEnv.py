@@ -32,6 +32,7 @@ class TradingEnv(gym.Env):
         end_dt = self._config.get('end_dt')
         self._portfolio = Portfolio(self._config.get('portfolio'))
         self._trading_price_obs = self._portfolio._trading_price_obs
+        self._last_obs = None
 
         self.__load_db()
 
@@ -125,14 +126,14 @@ class TradingEnv(gym.Env):
     def __repr__(self) -> str:
         return str(self._config)
     
-    def step(self, action):
+    def step(self, action) -> tuple:
         obs = None
-        reward = 0
+        reward = 0.0
         done = False
         info = {}
 
         self._current_dt_index += 1
-        self._portfolio.update(action, self._current_prices)
+        reward = self._portfolio.update(action, self._current_prices)
         obs, self._current_prices = self.__generate_obs()
 
         obs = {
@@ -140,10 +141,11 @@ class TradingEnv(gym.Env):
             'portfolio_state':self._portfolio.state
         }
 
+        self._last_obs = (obs, reward, done, info)
         return obs, reward, done, info
 
 
-    def reset(self):
+    def reset(self) -> dict:
         self._current_dt_index = random_index(self._min_index, self._max_index)
         obs, self._current_prices = self.__generate_obs() 
         self._portfolio.reset()
@@ -151,10 +153,11 @@ class TradingEnv(gym.Env):
             'market_data':obs,
             'portfolio_state':self._portfolio.state
         }
+        self._last_obs = (obs)
         return obs
 
 
-    def __generate_obs(self):
+    def __generate_obs(self) -> tuple:
         obs_var = self._obs_var
         num_of_history = self._num_of_history
         df_type_vx = self._data_loader in ['vx', 'vaex']
