@@ -5,7 +5,7 @@ from typing import Union
 import gym
 from gym.spaces import Discrete, Box, Dict
 from terl.config import EnvConfigManager, config_checker
-from terl.common.utils import random_index, load_one_file, select_from_df
+from terl.common import random_index, load_one_file, select_from_df
 from threading import Thread
 from terl.portfolio import Portfolio
 
