@@ -15,6 +15,7 @@ setup(
        "vaex",
        "pandas",
        "numpy",
-       "numba"
+       "numba",
+       'ta',
    ]
 )

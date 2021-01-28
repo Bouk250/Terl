@@ -45,7 +45,7 @@ class Portfolio:
                         trade['out_price'] = prices[key]
                         trade['out_datetime'] = prices.name
 
-                        trade['trade_profit'] = int((trade['enter_price'] - trade['out_price']) / self._pip_resolution)
+                        trade['trade_profit'] = (trade['enter_price'] - trade['out_price']) / self._pip_resolution
                         trade['trade_duration'] = trade['out_datetime'] - trade['enter_datetime']
 
                         profit += trade['trade_profit']
@@ -68,7 +68,7 @@ class Portfolio:
                         trade['out_price'] = prices[key]
                         trade['out_datetime'] = prices.name
 
-                        trade['trade_profit'] = int((trade['out_price'] - trade['enter_price']) / self._pip_resolution)
+                        trade['trade_profit'] = (trade['out_price'] - trade['enter_price']) / self._pip_resolution
                         trade['trade_duration'] = trade['out_datetime'] - trade['enter_datetime']
                         
                         profit += trade['trade_profit']
@@ -79,7 +79,7 @@ class Portfolio:
                     self._trade.loc[key]['position'] = 'Short'
                     self._trade.loc[key]['enter_price'] = prices[key]
                     self._trade.loc[key]['enter_datetime'] = prices.name
-        return int(profit)
+        return profit
 
     @property
     def legal_action(self) -> np.ndarray:

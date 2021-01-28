@@ -7,7 +7,7 @@ import vaex as vx
 
 @numba.njit(fastmath=True)
 def random_index(min_index:int, max_index:int) -> int:
-    return np.random.randint(min_index, max_index)
+    return np.random.randint(min_index, max_index,size=1)[0]
 
 def load_one_file(s:str,t:int,data_loader:str, data_path:str, obs_var:list, indicators:dict, df_result:list,index_list:list, i:int):
     df_id = f"{s}_{t}"

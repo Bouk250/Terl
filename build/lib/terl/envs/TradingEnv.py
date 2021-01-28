@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from typing import Union
 import gym
-from gym.spaces import Discrete, Box, Dict, MultiBinary
+from gym.spaces import Discrete, Box, Dict
 from terl.config import EnvConfigManager, config_checker
 from terl.common import random_index, load_one_file, select_from_df
 from threading import Thread
@@ -32,13 +32,14 @@ class TradingEnv(gym.Env):
         end_dt = self._config.get('end_dt')
         self._portfolio = Portfolio(self._config.get('portfolio'))
         self._trading_price_obs = self._portfolio._trading_price_obs
+        self._last_obs = None
 
         self.__load_db()
 
         if type(start_dt) is int:
             self._min_index = start_dt
         elif type(start_dt) is datetime:
-            self._min_index = np.where(self._dt_index_map.index >= start_dt)[0][0]
+            self._min_index = np.where(self._dt_index_map.index >= datetime(2000,1,1,00,00))[0][0]
         else:
             raise ValueError()
         
@@ -51,14 +52,14 @@ class TradingEnv(gym.Env):
             else:
                 self._max_index = end_dt
         elif type(end_dt) is datetime:
-            self._max_index = np.where(self._dt_index_map.index >= end_dt)[0][0]
+            self._max_index = np.where(self._dt_index_map.index >= datetime(2000,1,1,00,00))[0][0]
         else:
             raise ValueError()
 
         self.action_space = Discrete(self._portfolio._num_of_action)
         self.observation_space = Dict({
             'market_data':Box(low=-np.inf, high=np.inf, shape=self.reset()['market_data'].shape, dtype=np.float32),
-            'portfolio_state':MultiBinary(self._portfolio.state.shape)
+            'portfolio_state':Box(low=0,high=1,shape=self._portfolio.state.shape)
         }) 
 
 
@@ -133,12 +134,6 @@ class TradingEnv(gym.Env):
 
         self._current_dt_index += 1
         reward = self._portfolio.update(action, self._current_prices)
-
-        done = self._current_dt_index >= self._max_index
-        if done:
-            return obs, reward, done, info
-
-        info.update({'current_dt': self._dt_index_map.index[self._current_dt_index]})
         obs, self._current_prices = self.__generate_obs()
 
         obs = {
@@ -146,6 +141,7 @@ class TradingEnv(gym.Env):
             'portfolio_state':self._portfolio.state
         }
 
+        self._last_obs = (obs, reward, done, info)
         return obs, reward, done, info
 
 
@@ -157,6 +153,7 @@ class TradingEnv(gym.Env):
             'market_data':obs,
             'portfolio_state':self._portfolio.state
         }
+        self._last_obs = (obs)
         return obs
 
 

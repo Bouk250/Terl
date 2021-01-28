@@ -1,0 +1,14 @@
+Metadata-Version: 1.2
+Name: terl
+Version: 0.1.0
+Summary: T.E.R.L - Trading Env for Renforcement Learning
+Home-page: UNKNOWN
+Author: Ariel Boukris
+Author-email: ariel.boukris@outlook.com
+License: UNKNOWN
+Description: # TERL - Trading Env for Reinforcement Learning
+        version 1.5
+        
+        
+Platform: UNKNOWN
+Requires-Python: >=3.6
