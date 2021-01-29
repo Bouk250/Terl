@@ -23,17 +23,17 @@ def load_one_file(s:str,t:int,data_loader:str, data_path:str, obs_var:list, indi
         if indicators is not None:
             for key in indicators:
                 indicator = indicators.get(key, dict)
-                symbols = indicator.get('symbols')
-                timeframes = indicator.get('timeframes')
-                if s in symbols and t in timeframes:
-                    kwargs=dict()
-                    indicator_func = indicator.get('indicator_func')
-                    series = indicator.get('series')
-                    params = indicator.get('params')
-                    for series_key in series:
-                        kwargs.update([(series_key, df[series.get(series_key)])])
-                    kwargs.update(params)
-                    df[key] = indicator_func(**kwargs).to_numpy()
+                charts = indicator.get('chart')
+                for chart in charts:
+                    if chart in df_id:
+                        kwargs=dict()
+                        indicator_func = indicator.get('indicator_func')
+                        series = indicator.get('series')
+                        params = indicator.get('params')
+                        for series_key in series:
+                            kwargs.update([(series_key, df[series.get(series_key)])])
+                        kwargs.update(params)
+                        df[key] = indicator_func(**kwargs).to_numpy()
         
         df = df.add_prefix(f"{df_id}_")
 
@@ -46,17 +46,17 @@ def load_one_file(s:str,t:int,data_loader:str, data_path:str, obs_var:list, indi
         if indicators is not None:
             for key in indicators:
                 indicator = indicators.get(key, dict)
-                symbols = indicator.get('symbols')
-                timeframes = indicator.get('timeframes')
-                if s in symbols and t in timeframes:
-                    kwargs=dict()
-                    indicator_func = indicator.get('indicator_func')
-                    series = indicator.get('series')
-                    params = indicator.get('params')
-                    for series_key in series:
-                        kwargs.update([(series_key, df[series.get(series_key)].to_pandas_series())])
-                    kwargs.update(params)
-                    df[key] = indicator_func(**kwargs).to_numpy()
+                charts = indicator.get('chart')
+                for chart in charts:
+                    if chart in df_id:
+                        kwargs=dict()
+                        indicator_func = indicator.get('indicator_func')
+                        series = indicator.get('series')
+                        params = indicator.get('params')
+                        for series_key in series:
+                            kwargs.update([(series_key, df[series.get(series_key)].to_pandas_series())])
+                        kwargs.update(params)
+                        df[key] = indicator_func(**kwargs).to_numpy()
 
         for col in list(df.columns):
             new_col = f"{df_id}_{col}"

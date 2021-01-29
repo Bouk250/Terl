@@ -1,20 +1,14 @@
 Env 1:
   db:
-    data_loader: vaex
+    data_loader: vx
     data_path: ../data
     end_dt: -1
     start_dt: 2000-01-01 00:00:00
-    symbols:
-      - GBPUSD
-    timeframes:
-      - 15
     indicators:
       rsi:
         indicator_func: !!python/name:ta.momentum.rsi ''
-        symbols:
-        - GBPUSD
-        timeframes:
-        - 15
+        chart:
+          - GBPUSD_15
         params:
           window: 12
         series:

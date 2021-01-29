@@ -33,5 +33,5 @@ def mack_vec_env(env_id, num_env, dvice, seed=0):
     conf = EnvConfigManager().get_config(env_id)
     dbm = DBManager(conf.get('db'))
 
-    venvs = SubprocVecEnv([make_env(env_id, i, seed, dbm) for i in range(num_env)])
+    venvs = DummyVecEnv([make_env(env_id, i, seed, dbm) for i in range(num_env)])
     return venvs

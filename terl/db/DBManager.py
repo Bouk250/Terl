@@ -10,11 +10,23 @@ class DBManager:
         
         self._db = dict()
         self._config = config
-        self._symboles = self._config.get('symbols')
-        self._timesframes = self._config.get('timeframes')
+        self._obs_var = self._config.get('obs_var')
+        self._symboles = [] #self._config.get('symbols')
+        self._timesframes = [] #self._config.get('timeframes')
+
+        for var in self._obs_var:
+            split = var.split('_')
+            symbole = split[0]
+            timeframe = split[1]
+            self._symboles.append(symbole)
+            self._timesframes.append(timeframe)
+
+        self._symboles = list(set(self._symboles))
+        self._timesframes = list(set(self._timesframes))
+
         self._data_path = self._config.get('data_path')
         self._data_loader = self._config.get('data_loader')
-        self._obs_var = self._config.get('obs_var')
+        
         self._indicators = self._config.get('indicators')
         self._num_of_history = self._config.get('num_of_history')
         self._dt_index_map = None
