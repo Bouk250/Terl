@@ -1,130 +1,61 @@
 from datetime import datetime
+from threading import Thread
+from typing import Union
+
+import gym
 import numpy as np
 import pandas as pd
-from typing import Union
-import gym
-from gym.spaces import Discrete, Box, Dict, MultiBinary
+from gym.spaces import Box, Dict, Discrete, MultiBinary
+from terl.common import load_one_file, random_index, select_from_df
 from terl.config import EnvConfigManager, config_checker
-from terl.common import random_index, load_one_file, select_from_df
-from threading import Thread
 from terl.portfolio import Portfolio
+from terl.db import DBManager
 
 class TradingEnv(gym.Env):
 
-    def __init__(self, config:Union[dict,str]):
+    def __init__(self, config: Union[dict, str], db_manager=None):
 
         if type(config) is str:
             config = EnvConfigManager().get_config(config)
         config_checker(config)
         self._config = config
-        self._db = dict()
         self._current_prices = None
         self._current_dt_index = 0
-        self._symboles = self._config.get('symbols')
-        self._timesframes = self._config.get('timeframes')
-        self._data_path = self._config.get('data_path')
-        self._data_loader = self._config.get('data_loader')
-        self._obs_var = self._config.get('obs_var')
-        self._num_of_file = len(self._symboles)*len(self._timesframes)
-        self._indicators = self._config.get('indicators')
-        self._num_of_history = self._config.get('num_of_history')
-        start_dt = self._config.get('start_dt')
-        end_dt = self._config.get('end_dt')
+        if db_manager is None:
+            self._db_manager = DBManager(self._config.get('db'))
+        else:
+            self._db_manager = db_manager
+
+        #self._symboles = self._config.get('symbols')
+        #self._timesframes = self._config.get('timeframes')
+        #self._data_path = self._config.get('data_path')
+        #self._data_loader = self._config.get('data_loader')
+        #self._obs_var = self._config.get('obs_var')
+        #self._indicators = self._config.get('indicators')
+        #self._num_of_history = self._config.get('num_of_history')
+        #start_dt = self._config.get('start_dt')
+        #end_dt = self._config.get('end_dt')
+
         self._portfolio = Portfolio(self._config.get('portfolio'))
         self._trading_price_obs = self._portfolio._trading_price_obs
 
-        self.__load_db()
 
-        if type(start_dt) is int:
-            self._min_index = start_dt
-        elif type(start_dt) is datetime:
-            self._min_index = np.where(self._dt_index_map.index >= start_dt)[0][0]
-        else:
-            raise ValueError()
-        
-        if self._min_index < self._num_of_history:
-            self._min_index = self._config.get('num_of_history')
-
-        if type(end_dt) is int:
-            if end_dt == -1:
-                self._max_index = self._dt_index_map.shape[0]
-            else:
-                self._max_index = end_dt
-        elif type(end_dt) is datetime:
-            self._max_index = np.where(self._dt_index_map.index >= end_dt)[0][0]
-        else:
-            raise ValueError()
 
         self.action_space = Discrete(self._portfolio._num_of_action)
         self.observation_space = Dict({
-            'market_data':Box(low=-np.inf, high=np.inf, shape=self.reset()['market_data'].shape, dtype=np.float32),
-            'portfolio_state':MultiBinary(self._portfolio.state.shape)
-        }) 
-
+            'market_data': Box(low=-np.inf, high=np.inf, shape=self.reset()['market_data'].shape, dtype=np.float32),
+            'portfolio_state': MultiBinary(self._portfolio.state.shape)
+        })
 
     def get_config(self) -> dict:
         return self._config.copy()
 
-    def set_config(self, new_config:dict):
+    def set_config(self, new_config: dict):
         self._config = new_config
-
-    def __load_db(self):
-        symboles = self._symboles
-        timesframes = self._timesframes
-        data_path = self._data_path
-        data_loader = self._data_loader
-        obs_var = self._obs_var
-        num_of_file = len(symboles)*len(timesframes)
-        indicators = self._indicators
-
-        index_list = [None] * num_of_file
-        df_result = [None] * num_of_file
-        thread_list = [None] * num_of_file
-        i:int = 0
-        for s in symboles:
-            for t in timesframes:
-                
-                thread_list[i] = Thread(target=load_one_file,
-                kwargs={
-                    's':s, 
-                    't':t, 
-                    'data_loader':data_loader, 
-                    'data_path':data_path, 
-                    'obs_var':obs_var, 
-                    'indicators':indicators, 
-                    'df_result':df_result, 
-                    'index_list':index_list, 
-                    'i' : i
-                    })
-                thread_list[i].start()
-
-                """
-                load_one_file(**{
-                    's':s, 
-                    't':t, 
-                    'data_loader':data_loader, 
-                    'data_path':data_path, 
-                    'obs_var':obs_var, 
-                    'indicators':indicators, 
-                    'df_result':df_result, 
-                    'index_list':index_list, 
-                    'i' : i
-                    })
-
-                """
-                
-                i += 1
-
-        _ = [thread.join() for thread in thread_list]
-        index_list = [i for i in index_list if i is not None]
-        df_result = [df for df in df_result if df is not None]
-
-        self._db.update(df_result)
-        self._dt_index_map = pd.concat(index_list, axis=1).fillna(method='ffill').dropna().astype('int32')
 
     def __repr__(self) -> str:
         return str(self._config)
-    
+
     def step(self, action) -> tuple:
         obs = None
         reward = 0.0
@@ -134,58 +65,34 @@ class TradingEnv(gym.Env):
         self._current_dt_index += 1
         reward = self._portfolio.update(action, self._current_prices)
 
-        done = self._current_dt_index >= self._max_index
+        done = self._current_dt_index >= self._db_manager._max_index
+
         if done:
             return obs, reward, done, info
 
-        info.update({'current_dt': self._dt_index_map.index[self._current_dt_index]})
-        obs, self._current_prices = self.__generate_obs()
+        info.update(
+            {'current_dt': self._db_manager.get_datetime(self._current_dt_index)})
+
+        obs, self._current_prices = self._db_manager.generate_obs(self._current_dt_index)
 
         obs = {
-            'market_data':obs,
-            'portfolio_state':self._portfolio.state
+            'market_data': obs,
+            'portfolio_state': self._portfolio.state
         }
 
         return obs, reward, done, info
 
-
     def reset(self) -> dict:
-        self._current_dt_index = random_index(self._min_index, self._max_index)
-        obs, self._current_prices = self.__generate_obs() 
+        self._current_dt_index = random_index(self._db_manager._min_index, self._db_manager._max_index)
+        obs, self._current_prices = self._db_manager.generate_obs(self._current_dt_index)
         self._portfolio.reset()
         obs = {
-            'market_data':obs,
-            'portfolio_state':self._portfolio.state
+            'market_data': obs,
+            'portfolio_state': self._portfolio.state
         }
         return obs
 
-
-    def __generate_obs(self) -> tuple:
-        obs_var = self._obs_var
-        num_of_history = self._num_of_history
-        df_type_vx = self._data_loader in ['vx', 'vaex']
-        db = self._db
-        db_keys = db.keys()
-        db_len = len(db_keys)
-        indexs = self._dt_index_map.iloc[self._current_dt_index]
-
-        obs_blocks = [None] * db_len
-
-        for i, df_key in enumerate(db_keys):
-            start_index = indexs[df_key] - num_of_history
-            end_index = indexs[df_key]
-            df = db.get(df_key)
-
-            select_from_df(df,start_index,end_index,df_type_vx,obs_blocks,i)
-
-        obs = pd.concat(obs_blocks, axis=1)[obs_var]
-        prices = obs[self._trading_price_obs].iloc[-1]
-        prices.name = indexs.name
-        obs = obs.to_numpy(dtype=np.float32)
-            
-        return obs, prices
-
-def make_env(config_name:str, config_path:str = None) -> TradingEnv:
+def make_env(config_name: str, config_path: str = None) -> TradingEnv:
     if config_path is None:
         conf = EnvConfigManager().get_config(config_name)
     else:

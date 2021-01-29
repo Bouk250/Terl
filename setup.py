@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
    name='terl',
-   version='0.1.0',
+   version='0.1.1',
    author='Ariel Boukris',
    author_email='ariel.boukris@outlook.com',
    description='T.E.R.L - Trading Env for Renforcement Learning',

@@ -10,6 +10,8 @@ terl/common/__init__.py
 terl/common/utils.py
 terl/config/EnvConfigManager.py
 terl/config/__init__.py
+terl/db/DBManager.py
+terl/db/__init__.py
 terl/envs/TradingEnv.py
 terl/envs/__init__.py
 terl/portfolio/Portfolio.py
