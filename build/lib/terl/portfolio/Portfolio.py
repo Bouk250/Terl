@@ -23,6 +23,7 @@ class Portfolio:
             columns=self._trading_price_obs)
         self._num_of_action = 3**len(self._trading_price_obs)
 
+        self._save_trade = self._config.get('save_trade')
         self._trade = pd.DataFrame(index=self._action_map.columns, columns=['position', 'enter_price', 'enter_datetime'])
         self._history = pd.DataFrame(columns=['symbol', 'position', 'enter_price', 'enter_datetime', 'out_price', 'out_datetime', 'trade_profit', 'trade_duration'])
 
@@ -45,11 +46,11 @@ class Portfolio:
                         trade['out_price'] = prices[key]
                         trade['out_datetime'] = prices.name
 
-                        trade['trade_profit'] = (trade['enter_price'] - trade['out_price']) / self._pip_resolution
+                        trade['trade_profit'] = int((trade['enter_price'] - trade['out_price']) / self._pip_resolution)
                         trade['trade_duration'] = trade['out_datetime'] - trade['enter_datetime']
 
                         profit += trade['trade_profit']
-                        self._history = self._history.append(trade, ignore_index=True)
+                        if self._save_trade : self._history = self._history.append(trade, ignore_index=True)
 
                     else: # Long Position is open do nothing
                         pass # Long Position is open do nothing
@@ -68,18 +69,18 @@ class Portfolio:
                         trade['out_price'] = prices[key]
                         trade['out_datetime'] = prices.name
 
-                        trade['trade_profit'] = (trade['out_price'] - trade['enter_price']) / self._pip_resolution
+                        trade['trade_profit'] = int((trade['out_price'] - trade['enter_price']) / self._pip_resolution)
                         trade['trade_duration'] = trade['out_datetime'] - trade['enter_datetime']
                         
                         profit += trade['trade_profit']
-                        self._history = self._history.append(trade, ignore_index=True)
+                        if self._save_trade : self._history = self._history.append(trade, ignore_index=True)
                     else: # Short Position is open do nothing
                         pass # Short Position is open do nothing
                 else: # No open position
                     self._trade.loc[key]['position'] = 'Short'
                     self._trade.loc[key]['enter_price'] = prices[key]
                     self._trade.loc[key]['enter_datetime'] = prices.name
-        return profit
+        return int(profit)
 
     @property
     def legal_action(self) -> np.ndarray:

@@ -11,8 +11,8 @@ class ForexWrapper(ObservationWrapper):
     def __init__(self, env,axis=None, min_val=0, max_val=1):
         super(ForexWrapper, self).__init__(env)
         
-        ct = make_column_transformer((FunctionTransformer(self.minmax_scale, kw_args={'axis':axis, 'feature_range':(min_val,max_val)}),[0]),
-                                     (FunctionTransformer(self.minmax_scale, kw_args={'axis':axis, 'feature_range':(min_val,max_val)}),[1]),
+        ct = make_column_transformer((FunctionTransformer(self.minmax_scale, kw_args={'axis':axis, 'feature_range':(min_val,max_val)}),[0,1,2,3]),
+                                     (FunctionTransformer(self.minmax_scale, kw_args={'axis':axis, 'feature_range':(min_val,max_val)}),[4]),
                                      remainder='passthrough')
         
         self.model = make_pipeline(ct, FunctionTransformer(self.T))

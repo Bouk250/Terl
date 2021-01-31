@@ -21,20 +21,12 @@ class TradingEnv(gym.Env):
         self._config = config
         self._current_prices = None
         self._current_dt_index = 0
+        self._max_steps = config.get('max_steps')
+        self._steps = 0
         if db_manager is None:
             self._db_manager = DBManager(self._config.get('db'))
         else:
             self._db_manager = db_manager
-
-        #self._symboles = self._config.get('symbols')
-        #self._timesframes = self._config.get('timeframes')
-        #self._data_path = self._config.get('data_path')
-        #self._data_loader = self._config.get('data_loader')
-        #self._obs_var = self._config.get('obs_var')
-        #self._indicators = self._config.get('indicators')
-        #self._num_of_history = self._config.get('num_of_history')
-        #start_dt = self._config.get('start_dt')
-        #end_dt = self._config.get('end_dt')
 
         self._portfolio = Portfolio(self._config.get('portfolio'))
         self._trading_price_obs = self._portfolio._trading_price_obs
@@ -61,15 +53,12 @@ class TradingEnv(gym.Env):
         reward = 0.0
         done = False
         info = {}
-
+        self._steps += 1
         self._current_dt_index += 1
-        reward = self._portfolio.update(action, self._current_prices)
+        reward, portfolion_done = self._portfolio.update(action, self._current_prices)
 
-        done = self._current_dt_index >= self._db_manager._max_index
-
-        if done:
-            return obs, reward, done, info
-
+        done = portfolion_done or (self._steps == self._max_steps) or (self._current_dt_index == self._db_manager._max_index-1)
+        
         info.update(
             {'current_dt': self._db_manager.get_datetime(self._current_dt_index)})
 
@@ -86,6 +75,7 @@ class TradingEnv(gym.Env):
         self._current_dt_index = random_index(self._db_manager._min_index, self._db_manager._max_index)
         obs, self._current_prices = self._db_manager.generate_obs(self._current_dt_index)
         self._portfolio.reset()
+        self._steps = 0
         obs = {
             'market_data': obs,
             'portfolio_state': self._portfolio.state
