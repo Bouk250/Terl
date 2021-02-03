@@ -1,8 +1,8 @@
 from terl.envs import TradingEnv
 from terl.db import DBManager
-from wrappers import ForexWrapper, VecPyTorch
+from tests.wrappers import ForexWrapper
 from stable_baselines3.common.env_util import DummyVecEnv, SubprocVecEnv
-from custom_indicators import *
+from tests.custom_indicators import *
 from terl.config import EnvConfigManager
 
 def make_env(env_id, rank, seed, dbm=None):

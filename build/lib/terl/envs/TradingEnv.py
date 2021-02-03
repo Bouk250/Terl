@@ -55,9 +55,9 @@ class TradingEnv(gym.Env):
         info = {}
         self._steps += 1
         self._current_dt_index += 1
-        reward = self._portfolio.update(action, self._current_prices)
+        reward, portfolion_done = self._portfolio.update(action, self._current_prices)
 
-        done = (self._steps == self._max_steps) or (self._current_dt_index == self._db_manager._max_index-1)
+        done = portfolion_done or (self._steps == self._max_steps) or (self._current_dt_index == self._db_manager._max_index-1)
         
         info.update(
             {'current_dt': self._db_manager.get_datetime(self._current_dt_index)})
