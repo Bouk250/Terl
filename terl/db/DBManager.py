@@ -3,6 +3,7 @@ import pandas as pd
 from terl.common import load_one_file, random_index, select_from_df
 from threading import Thread
 from datetime import datetime
+import itertools
 
 class DBManager:
 
@@ -11,10 +12,13 @@ class DBManager:
         self._db = dict()
         self._config = config
         self._obs_var = self._config.get('obs_var')
+        temp_obs = list(self._obs_var.values())
+        self._obs_var_list = list(set(itertools.chain(*temp_obs)))
+
         self._symboles = [] #self._config.get('symbols')
         self._timesframes = [] #self._config.get('timeframes')
 
-        for var in self._obs_var:
+        for var in self._obs_var_list:
             split = var.split('_')
             symbole = split[0]
             timeframe = split[1]
@@ -39,7 +43,7 @@ class DBManager:
         timesframes = self._timesframes
         data_path = self._data_path
         data_loader = self._data_loader
-        obs_var = self._obs_var
+        obs_var = self._obs_var_list
         num_of_file = len(symboles)*len(timesframes)
         indicators = self._indicators
 
@@ -132,10 +136,13 @@ class DBManager:
             select_from_df(df, start_index, end_index,
                            df_type_vx, obs_blocks, i)
 
-        obs = pd.concat(obs_blocks, axis=1)[obs_var]
-        prices = obs.iloc[-1]
+        obs_df = pd.concat(obs_blocks, axis=1)
+        prices = obs_df.iloc[-1]
         prices.name = indexs.name
-        obs = obs.to_numpy(dtype=np.float32)
+
+        obs = dict()
+        for obs_key in obs_var:
+            obs[obs_key] = obs_df[obs_var[obs_key]].to_numpy(dtype=np.float32)
 
         return obs, prices
 

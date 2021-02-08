@@ -17,11 +17,13 @@ TestEnvSingle:
           - GBPUSD_15
     num_of_history: 60
     obs_var:
-    - GBPUSD_15_open
-    - GBPUSD_15_high
-    - GBPUSD_15_low
-    - GBPUSD_15_close
-    - GBPUSD_15_dss
+      market_data:
+        - GBPUSD_15_close
+        - GBPUSD_15_dss
+        - GBPUSD_15_close
+        - GBPUSD_15_dss
+      indicators:
+        - GBPUSD_15_dss
   portfolio:
     pip_resolution: 1.0e-5
     save_trade: True
