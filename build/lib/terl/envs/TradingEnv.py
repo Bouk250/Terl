@@ -34,10 +34,15 @@ class TradingEnv(gym.Env):
 
 
         self.action_space = Discrete(self._portfolio._num_of_action)
-        self.observation_space = Dict({
-            'market_data': Box(low=-np.inf, high=np.inf, shape=self.reset()['market_data'].shape, dtype=np.float32),
-            'portfolio_state': MultiBinary(self._portfolio.state.shape)
-        })
+
+        temp_obs = self.reset()
+        observation_space = dict()
+
+        for i, key in enumerate(temp_obs):
+            observation_space[key] = Box(low=-np.inf, high=np.inf, shape=temp_obs[key].shape, dtype=np.float32)
+        observation_space['portfolio_state'] = MultiBinary(self._portfolio.state.shape)
+
+        self.observation_space = Dict(observation_space)
 
     def get_config(self) -> dict:
         return self._config.copy()
@@ -64,10 +69,7 @@ class TradingEnv(gym.Env):
 
         obs, self._current_prices = self._db_manager.generate_obs(self._current_dt_index)
 
-        obs = {
-            'market_data': obs,
-            'portfolio_state': self._portfolio.state
-        }
+        obs['portfolio_state'] = self._portfolio.state
 
         return obs, reward, done, info
 
@@ -76,10 +78,8 @@ class TradingEnv(gym.Env):
         obs, self._current_prices = self._db_manager.generate_obs(self._current_dt_index)
         self._portfolio.reset()
         self._steps = 0
-        obs = {
-            'market_data': obs,
-            'portfolio_state': self._portfolio.state
-        }
+        obs['portfolio_state'] = self._portfolio.state
+
         return obs
 
 def make_env(config_name: str, config_path: str = None) -> TradingEnv:

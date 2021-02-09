@@ -161,7 +161,7 @@ class Portfolio:
 
         state = np.zeros(shape=(self._action_map.shape[0]))
         state[state_map.index[0]] = 1.0
-        return state
+        return np.copy(state)
 
     def clear_history(self):
         self._history = self._history.iloc[0:0]

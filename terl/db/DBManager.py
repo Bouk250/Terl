@@ -142,7 +142,7 @@ class DBManager:
 
         obs = dict()
         for obs_key in obs_var:
-            obs[obs_key] = obs_df[obs_var[obs_key]].to_numpy(dtype=np.float32)
+            obs[obs_key] = obs_df[obs_var[obs_key]].to_numpy(dtype=np.float32, copy=True)
 
         return obs, prices
 
