@@ -14,33 +14,74 @@ class EnvConfigManager:
     """
 
     __default_empty_config = {
-        "symbols" : ['GBPUSD'],
-        "timeframes" : [15],
-        "data_path": '/',
-        "data_loader": 'vaex',
-        "num_of_history" : 60,
-        "obs_var" : ['GBPUSD_15_close'],
-        "start_dt" : datetime(2000,1,1,00,00),
-        "end_dt": -1,
-        "indicators": {
-            'rsi': {
-                'symbols':['GBPUSD'],
-                'timeframes':[15],
-                'indicator_func': rsi,
-                'series': {
-                    'close': 'close'
-                },
-                'params': {
-                    'window': 12
-                }
-            }
+        "max_steps":500,
+        "db":{
+            "data_path": '/',
+            "data_loader": 'vaex',
+            "num_of_history" : 60,
+            "start_dt" : datetime(2000,1,1,00,00),
+            "end_dt": -1,
+            "indicators": {
+                'rsi': {
+                    'indicator_func': rsi,
+                    'series': {
+                        'close': 'close'
+                    },
+                    'params': {
+                        'window': 12
+                    },
+                    "chart":["GBPUSD_15"],
+                }, 
+            },
+            "obs_var":{
+                "market_data": ["GBPUSD_15_close"],
+                "indicators": ["GBPUSD_15_rsi"],
+            },
+
         },
         "portfolio":{
-            "trading_price_obs": ['GBPUSD_15_close'],
-            "pip_resolution": 0.00001,
-            
-        }
+            "pip_resolution": 1.0e-5,
+            "save_trade": True,
+            "done_type": "single",
+            "trading_price_obs":['GBPUSD_15_close']
+        },
     }
+
+    """
+    TestEnvSingle: 
+        max_steps: 500
+        db:
+            data_loader: vx
+            data_path: ../data/
+            end_dt: 2018-01-01 00:00:00
+            start_dt: 2000-01-01 00:00:00
+            indicators:
+                dss:
+                    indicator_func: !!python/name:custom_indicators.dss ''
+                    params: {}
+                    series:
+                        close: close
+                        high: high
+                        low: low
+                    chart:
+                    - GBPUSD_15
+            num_of_history: 60
+            obs_var:
+                market_data:
+                    - GBPUSD_15_close
+                    - GBPUSD_15_dss
+                    - GBPUSD_15_close
+                    - GBPUSD_15_dss
+                indicators:
+                    - GBPUSD_15_dss
+        portfolio:
+            pip_resolution: 1.0e-5
+            save_trade: True
+            done_type: single
+            trading_price_obs:
+            - GBPUSD_15_close
+      
+    """
     
     def __init__(self, config_path:str = "config.yaml", new_config_file:bool = False):
         self._env_config = dict()
